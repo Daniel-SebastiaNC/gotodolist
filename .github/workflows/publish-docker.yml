@@ -129,6 +129,14 @@ jobs:
       - name: Build local image
         run: docker build -f ${{ matrix.dockerfile }} -t gotodolist-${{ matrix.image_name }}:scan .
 
+      - name: Cache Trivy vulnerability database
+        uses: actions/cache@v4
+        with:
+          path: .trivycache/
+          key: ${{ runner.os }}-trivy-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-trivy-
+
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -137,6 +145,7 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           severity: HIGH,CRITICAL
+          cache-dir: .trivycache/
 
   build-and-push:
     name: 3. Build and push Docker images
