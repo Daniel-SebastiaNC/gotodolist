@@ -19,7 +19,10 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
 
 FROM alpine:3.22.4 AS runtime
 
-RUN addgroup -S app && adduser -S app -G app && apk add --no-cache ca-certificates wget
+# Upgrade de pacotes forçado para mitigar vulnerabilidades críticas do Alpine antes de adicionar o usuário
+RUN apk update && apk upgrade --no-cache && \
+    addgroup -S app && adduser -S app -G app && \
+    apk add --no-cache ca-certificates wget
 
 WORKDIR /app
 
