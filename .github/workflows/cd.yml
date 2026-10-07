@@ -57,3 +57,4 @@ jobs:
           fi
           
           echo "✅ Webhook chamado com sucesso — Portainer está re-deployando a stack"
+          
