@@ -2,30 +2,58 @@ name: CD
 
 on:
   workflow_run:
-    # Substitua "Release" pelo nome EXATO declarado no outro YAML
     workflows: ["Publish Docker Images and Release"]
     types:
       - completed
+
+env:
+  REGISTRY: ghcr.io
+  # Novamente, forçamos as letras minúsculas para evitar erros no Docker
+  IMAGE_PREFIX: daniel-sebastianc/gotodolist
 
 jobs:
   deploy:
     name: Deploy via Portainer Webhook
     runs-on: ubuntu-latest
-    # Garante que o deploy só ocorre se o build brilhar a verde
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Aguardar propagação da imagem no GHCR
-        run: sleep 30
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verificar imagem no GHCR
+        run: |
+          # Verifica ativamente se a nova imagem do monolito já está registada no GHCR
+          # Tentará 12 vezes, esperando 10 segundos entre cada tentativa (máx 2 minutos)
+          for i in $(seq 1 12); do
+            if docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-monolito:latest > /dev/null 2>&1; then
+              echo "✅ Imagem encontrada no GHCR!"
+              break
+            fi
+            echo "⏳ Aguardando propagação da imagem no registo... tentativa $i/12"
+            sleep 10
+            
+            if [ $i -eq 12 ]; then
+              echo "❌ Falha: A imagem não apareceu no GHCR após 2 minutos."
+              exit 1
+            fi
+          done
 
       - name: Chamar webhook do Portainer
         run: |
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST -k \
             "${{ secrets.PORTAINER_WEBHOOK_URL }}")
+          
           echo "HTTP Status: $HTTP_STATUS"
+          
           if [ "$HTTP_STATUS" -ne 204 ]; then
             echo "❌ Webhook retornou status $HTTP_STATUS (esperado: 204)"
             exit 1
           fi
+          
           echo "✅ Webhook chamado com sucesso — Portainer está re-deployando a stack"
