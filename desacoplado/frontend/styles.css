@@ -28,6 +28,7 @@ body {
   width: min(1120px, calc(100% - 2rem));
   margin: 0 auto;
   padding: 3rem 0 4rem;
+  background-color: #fcb9b9;
 }
 
 .hero,
