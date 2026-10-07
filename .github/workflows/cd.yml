@@ -2,7 +2,8 @@ name: CD
 
 on:
   workflow_run:
-    workflows: ["Release"]
+    # Substitua "Release" pelo nome EXATO declarado no outro YAML
+    workflows: ["Publish Docker Images and Release"]
     types:
       - completed
 
@@ -10,6 +11,7 @@ jobs:
   deploy:
     name: Deploy via Portainer Webhook
     runs-on: ubuntu-latest
+    # Garante que o deploy só ocorre se o build brilhar a verde
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
