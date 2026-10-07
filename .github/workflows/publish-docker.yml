@@ -8,7 +8,10 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository }}
+  # A variável github.repository (ex: Daniel-SebastiaNC/gotodolist) contém letras maiúsculas,
+  # o que quebra a etapa de build-and-push porque as regras do Docker exigem nomes
+  # de repositórios/imagens estritamente em letras minúsculas.
+  IMAGE_PREFIX: daniel-sebastianc/gotodolist
 
 jobs:
   tag-creation:
